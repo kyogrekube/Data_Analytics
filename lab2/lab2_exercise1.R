@@ -16,11 +16,7 @@ View(house.data)
 house.clean <- na.omit(house.data)
 
 ## Keep relevant variables only
-house.df <- data.frame(
-  Price = house.clean$PRICE,
-  PropertySqFt = house.clean$PROPERTYSQFT,
-  Beds = house.clean$BEDS,
-  Bath = house.clean$BATH
+house.df <- data.frame(Price = house.clean$PRICE, PropertySqFt = house.clean$PROPERTYSQFT, Beds = house.clean$BEDS, Bath = house.clean$BATH
 )
 
 ## Rounding numbers to integers
@@ -47,8 +43,7 @@ ggplot(house.df, aes(x = PropertySqFt, y = Price)) +
 ggplot(lin.mod0, aes(x = .fitted, y = .resid)) +
   geom_point() +
   geom_hline(yintercept = 0) +
-  labs(title='Residual vs. Fitted Values Plot (Model 0)', 
-       x='Fitted Values', y='Residuals')
+  labs(title='Residual vs. Fitted Values Plot (Model 1)', x='Fitted Values', y='Residuals')
 
 ### Model 1: Log-transformed Price
 house.df$LogPrice <- log10(house.df$Price)
@@ -66,8 +61,7 @@ ggplot(house.df, aes(x = Bath, y = LogPrice)) +
 ggplot(lin.mod1, aes(x = .fitted, y = .resid)) +
   geom_point() +
   geom_hline(yintercept = 0) +
-  labs(title='Residual vs. Fitted Values Plot (Model 1)', 
-       x='Fitted Values', y='Residuals')
+  labs(title='Residual vs. Fitted Values Plot (Model 2)', x='Fitted Values', y='Residuals')
 
 ### Model 2: Reduced predictors
 lin.mod2 <- lm(Price ~ PropertySqFt + Bath, house.df)
@@ -83,8 +77,7 @@ ggplot(house.df, aes(x = PropertySqFt, y = Price)) +
 ggplot(lin.mod2, aes(x = .fitted, y = .resid)) +
   geom_point() +
   geom_hline(yintercept = 0) +
-  labs(title='Residual vs. Fitted Values Plot (Model 2)', 
-       x='Fitted Values', y='Residuals')
+  labs(title='Residual vs. Fitted Values Plot (Model 3)', x='Fitted Values', y='Residuals')
 
 ##################
 # End of Lab 2
