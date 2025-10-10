@@ -11,9 +11,8 @@ setwd("C:/Users/mlitc/Documents/Data_Analytics/assignment2/")
 readCSV <- read_csv("epi_results_2024_pop_gdp.csv")
 View(readCSV)
 
-# Create variable for modified dataset and view it
+# Create variable for modified dataset
 modifiedData <- readCSV
-View(modifiedData)
 
 # Check for NAN and removes all rows with NAN present
 for (col in c("population", "gdp", "EPI.new", "ECO.new", "BDH.new", "SPI.new", "BER.new", "RLI.new")) {
@@ -25,23 +24,41 @@ for (col in c("population", "gdp", "EPI.new", "ECO.new", "BDH.new", "SPI.new", "
 
 ### Variable Distributions ###
 
-# Derive 2 subsets, each for a different region
+# Derive 2 subsets, each for a different region and display them
 subsetRegion1 <- subset(modifiedData, region == unique(modifiedData$region)[1])
 subsetRegion2 <- subset(modifiedData, region == unique(modifiedData$region)[2])
 
 # Define the common varirable to use in the plots between the 2 regions
 commonVariable <- "ECO.new"
 
-# Plot histograms with density lines overlayed for each region and display them
+# Plot boxplots for each region
+boxplot1 <- ggplot(subsetRegion1, aes(y = ECO.new, x = "", fill = "Region 1")) +
+  geom_boxplot(alpha = 0.6, color = "black") +
+  labs(title = paste("Boxplot -", unique(modifiedData$region)[1]),
+       y = commonVariable, x = "") +
+  theme_minimal() +
+  theme(legend.position = "none")
+
+boxplot2 <- ggplot(subsetRegion2, aes(y = ECO.new, x = "", fill = "Region 2")) +
+  geom_boxplot(alpha = 0.6, color = "black") +
+  labs(title = paste("Boxplot -", unique(modifiedData$region)[2]),
+       y = commonVariable, x = "") +
+  theme_minimal() +
+  theme(legend.position = "none")
+
+print(boxplot1)
+print(boxplot2)
+
+# Plot histograms with density lines overlaid for each region and display them
 histogram1 <- ggplot(subsetRegion1, aes(x = ECO.new)) +
-  geom_histogram(aes(y = ..density..), bins = 30, fill = "blue", alpha = 0.5) +
-  geom_density(color = "red", size = 1) +
+  geom_histogram(aes(y = ..density..), bins = 30, fill = "purple", alpha = 0.5) +
+  geom_density(color = "orange", size = 1) +
   ggtitle(paste("Histogram with Density -", unique(modifiedData$region)[1])) +
   theme_minimal()
 
 histogram2 <- ggplot(subsetRegion2, aes(x = ECO.new)) +
   geom_histogram(aes(y = ..density..), bins = 30, fill = "green", alpha = 0.5) +
-  geom_density(color = "red", size = 1) +
+  geom_density(color = "orange", size = 1) +
   ggtitle(paste("Histogram with Density -", unique(modifiedData$region)[2])) +
   theme_minimal()
 
@@ -53,13 +70,13 @@ print(histogram2)
 
 QQPlot1 <- ggplot(subsetRegion1, aes(sample = get(commonVariable))) +
   stat_qq(distribution = qnorm) +  # Compare against a normal distribution
-  stat_qq_line(distribution = qnorm, color = "red") +
+  stat_qq_line(distribution = qnorm, color = "orange") +
   ggtitle(paste("Q-Q Plot -", unique(modifiedData$region)[1])) +
   theme_minimal()
 
 QQPlot2 <- ggplot(subsetRegion2, aes(sample = get(commonVariable))) +
   stat_qq(distribution = qnorm) +  # Compare against a normal distribution
-  stat_qq_line(distribution = qnorm, color = "red") +
+  stat_qq_line(distribution = qnorm, color = "orange") +
   ggtitle(paste("Q-Q Plot -", unique(modifiedData$region)[2])) +
   theme_minimal()
 
@@ -71,7 +88,7 @@ print(QQPlot2)
 
 # Choose a variable (ECO.new) and fit 2 linear models with that variable as response.
 # Choose either population or GDP as predictors. Apply transformations if needed (e.g. log)
-# to varirables to obtain the best performing model.
+# to variables to obtain the best performing model.
 fullDatasetModel1 <- lm((ECO.new) ~ log10(gdp), data = modifiedData)
 fullDatasetModel2 <- lm((ECO.new) ~ log10(population), data = modifiedData)
 
@@ -85,30 +102,29 @@ summary(fullDatasetModel2)
 
 # Plot the most significant predictor vs. the response
 fullDatasetPredictorPlot1 <- ggplot(modifiedData, aes(x = log10(gdp), y = ECO.new)) +
-  geom_point(alpha = 0.6, color = "blue") +
-  geom_smooth(method = "lm", color = "red", se = TRUE) +
+  geom_point(alpha = 0.6, color = "purple") +
+  geom_smooth(method = "lm", color = "orange", se = TRUE) +
   ggtitle("ECO.new vs log10(GDP)") +
   theme_minimal()
-print(fullDatasetPredictorPlot1)
-
 fullDatasetPredictorPlot2 <- ggplot(modifiedData, aes(x = log10(population), y = ECO.new)) +
-  geom_point(alpha = 0.6, color = "blue") +
-  geom_smooth(method = "lm", color = "red", se = TRUE) +
+  geom_point(alpha = 0.6, color = "purple") +
+  geom_smooth(method = "lm", color = "orange", se = TRUE) +
   ggtitle("ECO.new vs log10(Population)") +
   theme_minimal()
+print(fullDatasetPredictorPlot1)
 print(fullDatasetPredictorPlot2)
 
 # Plot the residual
 residuals1 <- data.frame(Fitted = fitted(fullDatasetModel1), Residuals = resid(fullDatasetModel1))
 residuals2 <- data.frame(Fitted = fitted(fullDatasetModel2), Residuals = resid(fullDatasetModel2))
 fullDataset1Residual <- ggplot(residuals1, aes(x = Fitted, y = Residuals)) +
-  geom_point(alpha = 0.6, color = "blue") +
-  geom_hline(yintercept = 0, linetype = "dashed", color = "red") +
+  geom_point(alpha = 0.6, color = "purple") +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "orange") +
   ggtitle("Residuals Plot for fullDatasetModel1l") +
   theme_minimal()
 fullDataset2Residual <- ggplot(residuals2, aes(x = Fitted, y = Residuals)) +
   geom_point(alpha = 0.6, color = "green") +
-  geom_hline(yintercept = 0, linetype = "dashed", color = "red") +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "orange") +
   ggtitle("Residuals Plot for fullDatasetModel2") +
   theme_minimal()
 print(fullDataset1Residual)
@@ -125,30 +141,29 @@ summary(subRegionData2)
 
 # Plot the most significant predictor vs. the response
 subRegionPredictorPlot1 <- ggplot(subsetRegion1, aes(x = log10(gdp), y = ECO.new)) +
-  geom_point(alpha = 0.6, color = "blue") +
-  geom_smooth(method = "lm", color = "red", se = TRUE) +
+  geom_point(alpha = 0.6, color = "purple") +
+  geom_smooth(method = "lm", color = "orange", se = TRUE) +
   ggtitle("ECO.new vs log10(GDP)") +
   theme_minimal()
-print(subRegionPredictorPlot1)
-
 subRegionPredictorPlot2 <- ggplot(subsetRegion1, aes(x = log10(population), y = ECO.new)) +
-  geom_point(alpha = 0.6, color = "blue") +
-  geom_smooth(method = "lm", color = "red", se = TRUE) +
+  geom_point(alpha = 0.6, color = "purple") +
+  geom_smooth(method = "lm", color = "orange", se = TRUE) +
   ggtitle("ECO.new vs log10(Population)") +
   theme_minimal()
+print(subRegionPredictorPlot1)
 print(subRegionPredictorPlot2)
 
 # Plot the residual
 residuals1 <- data.frame(Fitted = fitted(subRegionData1), Residuals = resid(subRegionData1))
 residuals2 <- data.frame(Fitted = fitted(subRegionData2), Residuals = resid(subRegionData2))
 subRegion1Residual <- ggplot(residuals1, aes(x = Fitted, y = Residuals)) +
-  geom_point(alpha = 0.6, color = "blue") +
-  geom_hline(yintercept = 0, linetype = "dashed", color = "red") +
+  geom_point(alpha = 0.6, color = "purple") +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "orange") +
   ggtitle("Residuals Plot for subRegionData1") +
   theme_minimal()
 subRegion2Residual <- ggplot(residuals2, aes(x = Fitted, y = Residuals)) +
   geom_point(alpha = 0.6, color = "green") +
-  geom_hline(yintercept = 0, linetype = "dashed", color = "red") +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "orange") +
   ggtitle("Residuals Plot for subRegionData2") +
   theme_minimal()
 print(subRegion1Residual)
@@ -156,7 +171,7 @@ print(subRegion2Residual)
 
 ### Classification (kNN) ###
 
-# Define the two regions and create a subset using 3 varirables
+# Define the two regions and create a subset using 3 variables
 KNNsubset <- modifiedData[modifiedData$region %in% c("Southern Asia", "Eastern Europe"), c("region", "EPI.new", "ECO.new", "BDH.new")]
 KNNsubset$region <- as.factor(KNNsubset$region)
 
@@ -185,7 +200,7 @@ for (k in 1:10) {
 
 # Repeat previous model 3 other variables and the same k value
 
-# Define the two regions and create a subset using 3 varirables
+# Define the two regions and create a subset using 3 variables
 KNNsubset <- modifiedData[modifiedData$region %in% c("Southern Asia", "Eastern Europe"), c("region", "SPI.new", "BER.new", "RLI.new")]
 KNNsubset$region <- as.factor(KNNsubset$region)
 
