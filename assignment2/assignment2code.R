@@ -66,23 +66,29 @@ print(histogram1)
 print(histogram2)
 
 # Plot QQ Plot for the same variable between the 2 regions (1 QQ plot)
-# MODIFY THIS BIT. IT SHOULD ONLY MAKE 1 QQ PLOT!
 
-QQPlot1 <- ggplot(subsetRegion1, aes(sample = get(commonVariable))) +
-  stat_qq(distribution = qnorm) +  # Compare against a normal distribution
-  stat_qq_line(distribution = qnorm, color = "orange") +
-  ggtitle(paste("Q-Q Plot -", unique(modifiedData$region)[1])) +
+# Ensure the samples (regions) are the same length by trimming them to the same length
+min_length <- min(length(subsetRegion1[[commonVariable]]), length(subsetRegion2[[commonVariable]]))
+
+# Sort the samples and make them equal length
+region1_sorted <- sort(subsetRegion1[[commonVariable]])[1:min_length]
+region2_sorted <- sort(subsetRegion2[[commonVariable]])[1:min_length]
+
+# Create a dataframe for the qq plot that holds info on both the regions
+qq_data <- data.frame(region1 = region1_sorted, region2 = region2_sorted)
+
+# Create the QQ plot
+QQPlot <- ggplot(qq_data, aes(sample = region2, theoretical = region1)) +
+  geom_point(aes(x = region1, y = region2), color = "purple", alpha = 0.6) +
+  geom_abline(intercept = 0, slope = 1, color = "orange", linetype = "dashed") +
+  labs(
+    title = paste("Q-Q Plot Between", unique(modifiedData$region)[1], "and", unique(modifiedData$region)[2]),
+    x = unique(modifiedData$region)[1],
+    y = unique(modifiedData$region)[2]
+  ) +
   theme_minimal()
 
-QQPlot2 <- ggplot(subsetRegion2, aes(sample = get(commonVariable))) +
-  stat_qq(distribution = qnorm) +  # Compare against a normal distribution
-  stat_qq_line(distribution = qnorm, color = "orange") +
-  ggtitle(paste("Q-Q Plot -", unique(modifiedData$region)[2])) +
-  theme_minimal()
-
-# Display plots
-print(QQPlot1)
-print(QQPlot2)
+print(QQPlot)
 
 ### Linear Models ###
 
