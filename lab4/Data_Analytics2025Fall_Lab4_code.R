@@ -10,32 +10,82 @@ library(e1071)
 library(class)
 library(psych)
 library(readr)
+library(knitr) # Used for cleaner contingency table output
 
-## set working directory so that files can be referenced without the full path
-setwd("~/Courses/Data Analytics/Fall25/labs/lab 4/")
+# Import data
+setwd("C:/Users/mlitc/Documents/Data_Analytics/lab4/")
+wine <- read_csv("wine.data")
+colnames(wine) <- c("class.wine","Alcohol","Malic acid","Ash","Alcalinity of ash","Magnesium","Total phenols","Flavanoids","Nonflavanoid Phenols","Proanthocyanins","Color Intensity","Hue","Od280/od315 of diluted wines","Proline")
+Y <- wine[, 1]
+wine_scaled <- scale(wine[, -1])  # Standardize data
 
-## read dataset
-wine <- read_csv("wine.data", col_names = FALSE)
+### Find first 2 principal components and plot them
 
-## set column names
-names(wine) <- c("Type","Alcohol","Malic acid","Ash","Alcalinity of ash","Magnesium","Total phenols","Flavanoids","Nonflavanoid Phenols","Proanthocyanins","Color Intensity","Hue","Od280/od315 of diluted wines","Proline")
+principal_components <- princomp(wine_scaled, cor = TRUE, score = TRUE)
+summary(principal_components)
+plot(principal_components, type = "l")
+pca_data <- as.data.frame(principal_components$scores)
+pca_data$class <- wine$class.wine
+ggplot(pca_data, aes(x = Comp.1, y = Comp.2, color = as.factor(class))) +
+  geom_point(size = 3, alpha = 0.8) +
+  labs(title = "PCA: Principal Component 1 vs Principal Component 2", x = "Principal Component 1", y = "Principal Component 2") +
+  theme_minimal()
 
-## inspect data frame
-head(wine)
+### Create new dataset by dropping contributing variables and make pca
 
-## change the data type of the "Type" column from character to factor
-####
-# Factors look like regular strings (characters) but with factors R knows 
-# that the column is a categorical variable with finite possible values
-# e.g. "Type" in the Wine dataset can only be 1, 2, or 3
-####
+pc1_loadings <- abs(principal_components$loadings[,1])
+pc1_loadings_sorted <- sort(abs(principal_components$loadings[,1]), decreasing = TRUE)
+least_contributing_vars <- names(tail(pc1_loadings_sorted, 2))
+wine_reduced <- wine[, -1][, !(colnames(wine[, -1]) %in% least_contributing_vars)]
+wine_scaled_reduced <- scale(wine_reduced)
+pca_reduced <- prcomp(wine_scaled_reduced, center = TRUE, scale. = FALSE)
+summary(pca_reduced)
 
-wine$Type <- as.factor(wine$Type)
+### Create 2 models using kNN and outputting their contingency tables
 
+models <- list(
+  "Model 1" = list(data = as.data.frame(wine_scaled)),
+  "Model 2" = list(data = as.data.frame(pca_reduced$x)[, 1:3])
+)
+models[["Model 1"]]$data$class <- as.factor(wine$class.wine)
+models[["Model 2"]]$data$class <- as.factor(wine$class.wine)
+contingency_tables <- list()
+accuracies <- list()
+metrics_tables <- list()
 
-## visualize variables
-pairs.panels(wine[,-1],gap = 0,bg = c("red", "yellow", "blue")[wine$Type],pch=21)
+# Loop over models
+for (i in 1:length(models)) {
+  n = 177
+  s_data <- sample(n, n * .7)
+  dataset <- models[[i]]$data
+  dataset.train <- dataset[s_data, ]
+  dataset.test <- dataset[-s_data, ]
+  knn.predicted <- knn(train = dataset.train, test = dataset.test, cl = dataset.train$class, k = 13)
+  contingency.table <- table(knn.predicted, dataset.test$class, dnn = list('predicted', 'actual'))
+  contingency_tables[[i]] <- contingency.table
+  accuracies[[i]] <- sum(diag(contingency.table)) / length(dataset.test$class)
+  precision <- c()
+  recall <- c()
+  f1_score <- c()
+  classes <- colnames(contingency.table)
+  for (class in classes) {
+    TPval <- contingency.table[class, class]
+    FPval <- sum(contingency.table[class, ]) - TPval
+    FNval <- sum(contingency.table[, class]) - TPval
+    prec_val <- TPval / (TPval + FPval)
+    rec_val <- TPval / (TPval + FNval)
+    f1_val <- 2 * (prec_val * rec_val) / (prec_val + rec_val)
+    precision <- c(precision, prec_val)
+    recall <- c(recall, rec_val)
+    f1_score <- c(f1_score, f1_val)
+  }
+  metrics_df <- data.frame(Class = classes, Precision = precision, Recall = recall, F1_Score = f1_score)
+  metrics_tables[[i]] <- metrics_df
+}
 
-ggpairs(wine, ggplot2::aes(colour = Type))
+# Display both contingency tables and metrics
+kable(contingency_tables[[1]], caption = "Contingency Table of Model 1")
+kable(metrics_tables[[1]], caption = "Precision/Recall/F1 for Model 1")
 
-###
+kable(contingency_tables[[2]], caption = "Contingency Table of Model 2")
+kable(metrics_tables[[2]], caption = "Precision/Recall/F1 for Model 2")
